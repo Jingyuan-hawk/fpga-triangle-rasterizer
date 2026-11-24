@@ -1,0 +1,6 @@
+build/
+sim/build/
+*.bit
+*.ppm
+*.bmp
+*.zip
