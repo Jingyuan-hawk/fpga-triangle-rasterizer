@@ -8,14 +8,17 @@ foreach ($tool in @($xvlog,$xelab,$xsim)) {
     if (-not (Test-Path -LiteralPath $tool)) { throw "Tool not found: $tool" }
 }
 $common = @(
-    (Join-Path $root 'rtl\rasterizer1.sv'),
-    (Join-Path $root 'rtl\framebuffer_rgb565.sv'),
+    (Join-Path $root 'rtl\rasterizer4.sv'),
+    (Join-Path $root 'rtl\framebuffer_rgb565_4bank.sv'),
     (Join-Path $root 'rtl\raster_top.sv')
 )
 $tests = @(
     @{ Name='generic'; Top='tb_raster_top'; Extra=@(
         (Join-Path $root 'tb\tb_raster_top.sv'));
        Expected='PASS: clear, shared edge, clipping, winding, fractional vertices' },
+    @{ Name='scene'; Top='tb_scene_frame'; Extra=@(
+        (Join-Path $root 'tb\tb_scene_frame.sv'));
+       Expected='PASS: full 320x240 scene matches the reference' },
     @{ Name='arty'; Top='tb_arty_a7_top'; Extra=@(
         (Join-Path $root 'board\uart_tx.sv'),
         (Join-Path $root 'board\arty_a7_top.sv'),

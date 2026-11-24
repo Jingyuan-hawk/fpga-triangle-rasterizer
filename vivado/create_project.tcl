@@ -1,11 +1,11 @@
 set project_root [file normalize [file join [file dirname [info script]] ..]]
-set project_dir [file join $project_root build vivado_pipeline_100]
+set project_dir [file join $project_root build vivado_four_lane_100]
 file mkdir $project_dir
-create_project arty_rasterizer_pipeline_100 $project_dir -part xc7a100tcsg324-1 -force
+create_project arty_rasterizer_four_lane_100 $project_dir -part xc7a100tcsg324-1 -force
 
 add_files -norecurse [list \
-    [file join $project_root rtl rasterizer1.sv] \
-    [file join $project_root rtl framebuffer_rgb565.sv] \
+    [file join $project_root rtl rasterizer4.sv] \
+    [file join $project_root rtl framebuffer_rgb565_4bank.sv] \
     [file join $project_root rtl raster_top.sv] \
     [file join $project_root board uart_tx.sv] \
     [file join $project_root board arty_a7_top.sv] \

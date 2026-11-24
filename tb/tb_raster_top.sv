@@ -128,6 +128,13 @@ module tb_raster_top;
         check_frame();
 
         clear_frame();
+        // Exercise all three nonzero offsets within a four-pixel write group.
+        send_triangle(24,24, 88,24, 24,88, 16'hF81F);
+        send_triangle(40,40, 104,40, 40,104, 16'h07FF);
+        send_triangle(56,56, 120,56, 56,120, 16'hFFE0);
+        check_frame();
+
+        clear_frame();
         check_frame();
         $display("PASS: clear, shared edge, clipping, winding, fractional vertices");
         $finish;

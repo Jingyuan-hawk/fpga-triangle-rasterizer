@@ -7,8 +7,15 @@ module tb_arty_a7_top;
     logic uart_rxd_out;
     logic [7:0] received;
     logic [31:0] uart_cycles;
+    logic [31:0] clear_phase_cycles;
 
     arty_a7_top dut (.*);
+
+    initial begin
+        wait(dut.clear_done);
+        @(posedge CLK100MHZ);
+        #1 clear_phase_cycles = dut.draw_cycles;
+    end
 
     task automatic receive_byte(output logic [7:0] value);
         @(negedge uart_rxd_out);
@@ -45,6 +52,7 @@ module tb_arty_a7_top;
         receive_byte(received); if (received !== 8'h00) $fatal(1,"First pixel low");
         receive_byte(received); if (received !== 8'h00) $fatal(1,"First pixel high");
         $display("FRAME_DRAW_CYCLES=%0d",uart_cycles);
+        $display("TRIANGLE_PHASE_CYCLES=%0d",uart_cycles-clear_phase_cycles);
         $display("PASS: Arty top drew frame and sent UART timing / first pixel");
         $finish;
     end

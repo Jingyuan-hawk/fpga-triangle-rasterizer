@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-// Generic integration: clear engine + one-lane rasterizer + framebuffer.
+// Generic integration: clear engine + four-lane rasterizer + four-bank framebuffer.
 module raster_top #(
     parameter int WIDTH = 320,
     parameter int HEIGHT = 240,
@@ -23,11 +23,11 @@ module raster_top #(
     logic clearing;
     logic [ADDR_W-1:0] clear_addr;
     logic core_ready, core_busy, core_done;
-    logic core_wr_valid;
-    logic [ADDR_W-1:0] core_wr_addr;
+    logic [3:0] core_wr_valid;
+    logic [3:0][ADDR_W-1:0] core_wr_addr;
     logic [15:0] core_wr_data;
-    logic fb_wr_en;
-    logic [ADDR_W-1:0] fb_wr_addr;
+    logic [3:0] fb_wr_en;
+    logic [3:0][ADDR_W-1:0] fb_wr_addr;
     logic [15:0] fb_wr_data;
 
     // Clear has priority if both commands arrive in the same idle cycle.
@@ -36,23 +36,27 @@ module raster_top #(
         tri_ready = !clearing && !clear_valid && core_ready;
         tri_done = core_done;
         busy = clearing || core_busy;
-        fb_wr_en = clearing || core_wr_valid;
-        fb_wr_addr = clearing ? clear_addr : core_wr_addr;
+        for (int bank=0; bank<4; bank++) begin
+            fb_wr_en[bank] = clearing ?
+                (clear_addr[1:0] == bank) : core_wr_valid[bank];
+            fb_wr_addr[bank] = clearing ?
+                clear_addr : core_wr_addr[bank];
+        end
         fb_wr_data = clearing ? 16'b0 : core_wr_data;
     end
 
-    rasterizer1 #(.WIDTH(WIDTH),.HEIGHT(HEIGHT),.ADDR_W(ADDR_W)) core (
+    rasterizer4 #(.WIDTH(WIDTH),.HEIGHT(HEIGHT),.ADDR_W(ADDR_W)) core (
         .clk, .rst_n,
         .tri_valid(tri_valid && tri_ready), .tri_ready(core_ready),
         .x0_in(x0), .y0_in(y0), .x1_in(x1), .y1_in(y1),
         .x2_in(x2), .y2_in(y2), .color_in(color),
         .tri_done(core_done), .busy(core_busy),
-        .wr_valid(core_wr_valid), .wr_ready(!clearing),
+        .wr_valid(core_wr_valid),
         .wr_addr(core_wr_addr), .wr_data(core_wr_data)
     );
 
-    framebuffer_rgb565 #(.WIDTH(WIDTH),.HEIGHT(HEIGHT),
-                          .WORDS(WORDS),.ADDR_W(ADDR_W)) framebuffer (
+    framebuffer_rgb565_4bank #(.WIDTH(WIDTH),.HEIGHT(HEIGHT),
+                                .WORDS(WORDS),.ADDR_W(ADDR_W)) framebuffer (
         .clk, .wr_en(fb_wr_en), .wr_addr(fb_wr_addr),
         .wr_data(fb_wr_data),
         .rd_addr, .rd_data
