@@ -25,6 +25,13 @@ try {
     if ($width -ne 320 -or $height -ne 240) {
         throw "Unexpected frame size: $width x $height"
     }
+    $cycleBytes = [byte[]]::new(4)
+    for ($i = 0; $i -lt 4; $i++) {
+        $cycleBytes[$i] = [byte]$serial.ReadByte()
+    }
+    $drawCycles = [System.BitConverter]::ToUInt32($cycleBytes, 0)
+    $drawMs = $drawCycles / 100000.0
+    Write-Host ("Frame draw: {0} cycles ({1:F3} ms at 100 MHz)" -f $drawCycles, $drawMs)
     $raw = [byte[]]::new($width * $height * 2)
     $offset = 0
     $serial.ReadTimeout = 10000

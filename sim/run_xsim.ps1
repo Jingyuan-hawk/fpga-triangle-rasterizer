@@ -20,7 +20,7 @@ $tests = @(
         (Join-Path $root 'board\uart_tx.sv'),
         (Join-Path $root 'board\arty_a7_top.sv'),
         (Join-Path $root 'tb\tb_arty_a7_top.sv'));
-       Expected='PASS: Arty top drew frame and sent UART header / first pixel' }
+       Expected='PASS: Arty top drew frame and sent UART timing / first pixel' }
 )
 foreach ($test in $tests) {
     $directory = Join-Path $root ("build\xsim_one_" + $test.Name)

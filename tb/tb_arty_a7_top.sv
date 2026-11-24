@@ -6,6 +6,7 @@ module tb_arty_a7_top;
     logic [3:0] led;
     logic uart_rxd_out;
     logic [7:0] received;
+    logic [31:0] uart_cycles;
 
     arty_a7_top dut (.*);
 
@@ -35,9 +36,16 @@ module tb_arty_a7_top;
         receive_byte(received); if (received !== 8'h01) $fatal(1,"Width high");
         receive_byte(received); if (received !== 8'hf0) $fatal(1,"Height low");
         receive_byte(received); if (received !== 8'h00) $fatal(1,"Height high");
+        for (int i=0; i<4; i++) begin
+            receive_byte(received);
+            uart_cycles[8*i +: 8] = received;
+        end
+        if (uart_cycles !== dut.frame_draw_cycles)
+            $fatal(1,"Frame cycle count mismatch");
         receive_byte(received); if (received !== 8'h00) $fatal(1,"First pixel low");
         receive_byte(received); if (received !== 8'h00) $fatal(1,"First pixel high");
-        $display("PASS: Arty top drew frame and sent UART header / first pixel");
+        $display("FRAME_DRAW_CYCLES=%0d",uart_cycles);
+        $display("PASS: Arty top drew frame and sent UART timing / first pixel");
         $finish;
     end
 

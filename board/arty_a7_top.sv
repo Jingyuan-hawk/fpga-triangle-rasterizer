@@ -15,8 +15,9 @@ module arty_a7_top (
 
     // Configuration initializes POR to zero on 7-series FPGAs.
     logic [15:0] por = 0;
-    logic [31:0] tri_cycles;
-    logic [31:0] last_tri_cycles;
+    // Counts from the first clear command through the last triangle.
+    logic [31:0] draw_cycles;
+    logic [31:0] frame_draw_cycles;
     logic rst_n;
 
     always_ff @(posedge CLK100MHZ) begin
@@ -114,16 +115,14 @@ module arty_a7_top (
     );
     always_ff @(posedge CLK100MHZ or negedge rst_n) begin
         if (!rst_n) begin
-            tri_cycles      <= 0;
-            last_tri_cycles <= 0;
+            draw_cycles <= 0;
+            frame_draw_cycles <= 0;
         end else begin
-            if (tri_valid && tri_ready)
-                tri_cycles <= 0;
-            else if (busy)
-                tri_cycles <= tri_cycles + 1;
-
-            if (tri_done)
-                last_tri_cycles <= tri_cycles;
+            if ((state == S_CLEAR) || (state == S_CLEAR_WAIT) ||
+                (state == S_TRI) || (state == S_TRI_WAIT))
+                draw_cycles <= draw_cycles + 1'b1;
+            if ((state == S_TRI_WAIT) && tri_done && (tri_index == 2))
+                frame_draw_cycles <= draw_cycles + 1'b1;
         end
     end
     always_comb begin
@@ -139,6 +138,10 @@ module arty_a7_top (
                 5: tx_data = 8'(WIDTH >> 8);
                 6: tx_data = 8'(HEIGHT);
                 7: tx_data = 8'(HEIGHT >> 8);
+                8: tx_data = frame_draw_cycles[7:0];
+                9: tx_data = frame_draw_cycles[15:8];
+                10: tx_data = frame_draw_cycles[23:16];
+                11: tx_data = frame_draw_cycles[31:24];
                 default: tx_data = 0;
             endcase
         end else if (state == S_SEND_BYTE) begin
@@ -179,7 +182,7 @@ module arty_a7_top (
                     state <= S_HEADER;
                 end
                 S_HEADER: if (tx_ready) begin
-                    if (header_index == 7) state <= S_READ_ADDR;
+                    if (header_index == 11) state <= S_READ_ADDR;
                     else header_index <= header_index + 1'b1;
                 end
                 S_READ_ADDR: begin
