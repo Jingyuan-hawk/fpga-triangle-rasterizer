@@ -1,5 +1,5 @@
 set project_root [file normalize [file join [file dirname [info script]] ..]]
-set project_path [file join $project_root build vivado_100 arty_rasterizer_100.xpr]
+set project_path [file join $project_root build vivado_pipeline_100 arty_rasterizer_pipeline_100.xpr]
 if {![file exists $project_path]} {
     error "Project not found; run create_project.tcl first: $project_path"
 }
@@ -24,7 +24,7 @@ puts "SETUP_WNS_NS=$setup_slack"
 if {$setup_slack < 0} {
     error "100 MHz setup timing is not met; bitstream was not published"
 }
-set bit_file [file join $project_root build vivado_100 arty_rasterizer_100.runs impl_1 arty_a7_top.bit]
+set bit_file [file join $project_root build vivado_pipeline_100 arty_rasterizer_pipeline_100.runs impl_1 arty_a7_top.bit]
 if {![file exists $bit_file]} {
     error "Bitstream not found: $bit_file"
 }

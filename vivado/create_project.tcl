@@ -1,7 +1,7 @@
 set project_root [file normalize [file join [file dirname [info script]] ..]]
-set project_dir [file join $project_root build vivado_100]
+set project_dir [file join $project_root build vivado_pipeline_100]
 file mkdir $project_dir
-create_project arty_rasterizer_100 $project_dir -part xc7a100tcsg324-1 -force
+create_project arty_rasterizer_pipeline_100 $project_dir -part xc7a100tcsg324-1 -force
 
 add_files -norecurse [list \
     [file join $project_root rtl rasterizer1.sv] \

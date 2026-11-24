@@ -24,6 +24,8 @@ module rasterizer1 #(
         logic signed [15:0] x0, y0, x1, y1, x2, y2;
         logic [15:0] color;
         logic signed [EDGE_W-1:0] area;
+        logic signed [EDGE_W-1:0] area_p0, area_p1;
+        logic area_phase;
         logic signed [15:0] ax, ay, bx, by, cx, cy;
         logic signed [31:0] x, first_x, x_max, y, y_max;
         logic signed [31:0] sample_x, sample_y;
@@ -37,17 +39,6 @@ module rasterizer1 #(
     } pipe_t;
     pipe_t q, d;
     logic tri_done_next, pixel_inside;
-
-    function automatic signed [EDGE_W-1:0] edge_value(
-        input logic signed [31:0] ax, ay, bx, by, px, py
-    );
-        logic signed [31:0] dx, dy, rx, ry;
-        begin
-            dx = bx - ax; dy = by - ay;
-            rx = px - ax; ry = py - ay;
-            edge_value = dx*ry - dy*rx;
-        end
-    endfunction
 
     function automatic signed [31:0] min3(input logic signed [31:0] a, b, c);
         min3 = (a < b) ? ((a < c) ? a : c) : ((b < c) ? b : c);
@@ -66,7 +57,12 @@ module rasterizer1 #(
     logic signed [31:0] left_raw, right_raw, top_raw, bottom_raw;
     logic signed [31:0] left_clip, right_clip, top_clip, bottom_clip;
     logic signed [31:0] dx0, dy0, dx1, dy1, dx2, dy2;
+    logic signed [16:0] area_dx, area_dy, area_rx, area_ry;
     always_comb begin
+        area_dx = $signed(q.x1) - $signed(q.x0);
+        area_dy = $signed(q.y1) - $signed(q.y0);
+        area_rx = $signed(q.x2) - $signed(q.x0);
+        area_ry = $signed(q.y2) - $signed(q.y0);
         dx0 = $signed(q.bx) - $signed(q.ax);
         dy0 = $signed(q.by) - $signed(q.ay);
         dx1 = $signed(q.cx) - $signed(q.bx);
@@ -104,11 +100,18 @@ module rasterizer1 #(
                 d.x1 = x1_in; d.y1 = y1_in;
                 d.x2 = x2_in; d.y2 = y2_in;
                 d.color = color_in;
+                d.area_phase = 1'b0;
                 state_next = CALC_AREA;
             end
             CALC_AREA: begin
-                d.area = edge_value(q.x0,q.y0,q.x1,q.y1,q.x2,q.y2);
-                state_next = ORIENT;
+                if (!q.area_phase) begin
+                    d.area_p0 = area_dx * area_ry;
+                    d.area_p1 = area_dy * area_rx;
+                    d.area_phase = 1'b1;
+                end else begin
+                    d.area = q.area_p0 - q.area_p1;
+                    state_next = ORIENT;
+                end
             end
             ORIENT: begin
                 d.ax = q.x0; d.ay = q.y0;
