@@ -29,6 +29,7 @@ module rasterizer1 #(
         logic signed [15:0] ax, ay, bx, by, cx, cy;
         logic signed [31:0] x, first_x, x_max, y, y_max;
         logic signed [31:0] sample_x, sample_y;
+        logic bbox_phase;
         logic signed [16:0] dx0, dy0, dx1, dy1, dx2, dy2;
         logic signed [16:0] rx0, ry0, rx1, ry1, rx2, ry2;
         logic signed [EDGE_W-1:0] p0a, p0b, p1a, p1b, p2a, p2b;
@@ -119,35 +120,40 @@ module rasterizer1 #(
                 d.by = (q.area < 0) ? q.y2 : q.y1;
                 d.cx = (q.area < 0) ? q.x1 : q.x2;
                 d.cy = (q.area < 0) ? q.y1 : q.y2;
+                d.bbox_phase = 1'b0;
                 if (q.area == 0) begin
                     state_next = IDLE;
                     tri_done_next = 1'b1;
                 end else state_next = BBOX;
             end
             BBOX: begin
-                d.x = left_clip; d.first_x = left_clip; d.x_max = right_clip;
-                d.y = top_clip; d.y_max = bottom_clip;
-                d.sample_x = (left_clip <<< 4) + 32'sd8;
-                d.sample_y = (top_clip <<< 4) + 32'sd8;
-                d.dx0 = dx0; d.dy0 = dy0;
-                d.dx1 = dx1; d.dy1 = dy1;
-                d.dx2 = dx2; d.dy2 = dy2;
-                d.rx0 = d.sample_x - $signed(q.ax);
-                d.ry0 = d.sample_y - $signed(q.ay);
-                d.rx1 = d.sample_x - $signed(q.bx);
-                d.ry1 = d.sample_y - $signed(q.by);
-                d.rx2 = d.sample_x - $signed(q.cx);
-                d.ry2 = d.sample_y - $signed(q.cy);
-                d.init_phase = 1'b0;
-                d.sx0 = -times16(dy0); d.sy0 = times16(dx0);
-                d.sx1 = -times16(dy1); d.sy1 = times16(dx1);
-                d.sx2 = -times16(dy2); d.sy2 = times16(dx2);
-                d.inclusive = {
-                    (dy2 < 0) || ((dy2 == 0) && (dx2 > 0)),
-                    (dy1 < 0) || ((dy1 == 0) && (dx1 > 0)),
-                    (dy0 < 0) || ((dy0 == 0) && (dx0 > 0))
-                };
-                state_next = INIT_EDGE;
+                if (!q.bbox_phase) begin
+                    d.x = left_clip; d.first_x = left_clip; d.x_max = right_clip;
+                    d.y = top_clip; d.y_max = bottom_clip;
+                    d.sample_x = (left_clip <<< 4) + 32'sd8;
+                    d.sample_y = (top_clip <<< 4) + 32'sd8;
+                    d.bbox_phase = 1'b1;
+                end else begin
+                    d.dx0 = dx0; d.dy0 = dy0;
+                    d.dx1 = dx1; d.dy1 = dy1;
+                    d.dx2 = dx2; d.dy2 = dy2;
+                    d.rx0 = q.sample_x - $signed(q.ax);
+                    d.ry0 = q.sample_y - $signed(q.ay);
+                    d.rx1 = q.sample_x - $signed(q.bx);
+                    d.ry1 = q.sample_y - $signed(q.by);
+                    d.rx2 = q.sample_x - $signed(q.cx);
+                    d.ry2 = q.sample_y - $signed(q.cy);
+                    d.init_phase = 1'b0;
+                    d.sx0 = -times16(dy0); d.sy0 = times16(dx0);
+                    d.sx1 = -times16(dy1); d.sy1 = times16(dx1);
+                    d.sx2 = -times16(dy2); d.sy2 = times16(dx2);
+                    d.inclusive = {
+                        (dy2 < 0) || ((dy2 == 0) && (dx2 > 0)),
+                        (dy1 < 0) || ((dy1 == 0) && (dx1 > 0)),
+                        (dy0 < 0) || ((dy0 == 0) && (dx0 > 0))
+                    };
+                    state_next = INIT_EDGE;
+                end
             end
             INIT_EDGE: begin
                 if ((q.x > q.x_max) || (q.y > q.y_max)) begin
