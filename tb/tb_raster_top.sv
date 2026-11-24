@@ -74,6 +74,11 @@ module tb_raster_top;
         color=rgb; tri_valid=1;
         @(negedge clk);
         tri_valid=0;
+        // Change the bus immediately after acceptance to check input latching.
+        x0=16'sd300; y0=16'sd300;
+        x1=16'sd320; y1=16'sd300;
+        x2=16'sd300; y2=16'sd320;
+        color=16'h1234;
         wait(tri_done);
         reference_triangle(xa,ya,xb,yb,xc,yc,rgb);
     endtask
@@ -119,6 +124,7 @@ module tb_raster_top;
         send_triangle(-16,64, 128,176, 256,80, 16'h001F);
         send_triangle(36,20, 68,156, 208,44, 16'hFFE0);
         send_triangle(16,16, 32,32, 48,48, 16'hFFFF);
+        send_triangle(-128,-128, -64,-128, -64,-64, 16'h07FF);
         check_frame();
 
         clear_frame();

@@ -4,3 +4,7 @@ sim/build/
 *.ppm
 *.bmp
 *.zip
+/.Xil/
+/vivado*.log
+/vivado*.jou
+/dfx_runtime.txt

@@ -1,5 +1,9 @@
 # FPGA Triangle Rasterizer
 
-This version rasterizes triangles defined by specified vertex coordinates and RGB565 colors on an Arty A7-100T. It uses one pixel lane and the board's 100 MHz clock.
+This version rasterizes triangles defined by vertex coordinates and RGB565 colors on an Arty A7-100T. It uses one pixel lane and the board's 100 MHz clock.
 
-The unpipelined design has a severe setup violation from `tri_index_reg[1]_replica` to `row1_reg[62]` (slack: -21.436 ns). The worst reported setup path ends at `e1_reg[61]` with slack of -21.695 ns. The design passes functional simulation but does not meet 100 MHz hardware timing.
+The rasterizer has six states: IDLE latches the three vertices and color; CALC_AREA latches the signed area; ORIENT latches the vertices in counterclockwise order; BBOX latches the clipped bounds and first sample position; INIT_EDGE latches the initial edge values; RUN tests one pixel on each clock when the write port is ready. INIT_EDGE takes two clocks so multiplication and subtraction are separated. The clocked block only resets or copies the next register values.
+
+Vivado 2025.2 post-route setup timing on the Arty A7-100T has WNS +0.172 ns at 100 MHz. The earlier unpipelined version had WNS -21.695 ns. XSIM passes the pixel coverage and Arty UART tests, including changed input buses after triangle acceptance and a triangle completely outside the frame.
+
+Run `sim/run_xsim.ps1` for simulation. Run `vivado/create_project.tcl` and then `vivado/build_bitstream.tcl` in Vivado batch mode to build the board image. The build script publishes `arty_a7_rasterizer.bit` only when setup timing passes.
